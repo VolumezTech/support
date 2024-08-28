@@ -6,7 +6,7 @@
 Then upload the log file to support
 
 ## For more options you can donwload the collector script using curl or wget:
-`curl -OsL https://github.com/VolumezTech/support/raw/main/vlz-k8s-collector.sh`
+`curl -OL https://github.com/VolumezTech/support/raw/main/vlz-k8s-collector.sh`
 
 Add execute permissions:
 
@@ -24,5 +24,6 @@ Examples:
     ./vlz-k8s-collector.sh --minimal              #Perform the shortest passible collection
     ./vlz-k8s-collector.sh                        #Perform regualr collection
     ./vlz-k8s-collector.sh --full                 #Perform full collection
-    ./vlz-k8s-collector.sh --help, -h             #Show this help message.
+    ./vlz-k8s-collector.sh --help, -h             #Show this help message
+    ./vlz-k8s-collector.sh --version -v           #Show script version and exit
 ```

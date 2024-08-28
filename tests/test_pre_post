@@ -1,0 +1,47 @@
+. ../vlz-k8s-collector.sh
+
+setup_suite() {
+    origin_pwd=$(pwd)
+    echo "Setting up the suite, origin_pwd: $origin_pwd"
+}
+
+my_teardown() {
+    # Clean up
+    if [ -n "$tmp_folder" ]; then
+        echo "Attempting to remove directory: $origin_pwd/$tmp_folder"
+        rm -rf "$origin_pwd/$tmp_folder"
+        # if [ $? -eq 0 ]; then
+            # echo "Successfully removed directory: $origin_pwd/$tmp_folder"
+        # else
+            # echo "Failed to remove directory: $origin_pwd/$tmp_folder"
+        # fi
+    # else
+        # echo "tmp_folder is not set or is empty"
+    # fi
+
+    echo "Attempting to remove tar files matching: $origin_pwd/vlz-support-*.tgz"
+    rm -f $origin_pwd/vlz-support-*.tgz
+    # if [ $? -eq 0 ]; then
+        # echo "Successfully removed tar files matching: $origin_pwd/vlz-support-*.tgz"
+    # else
+        # echo "Failed to remove tar files matching: $origin_pwd/vlz-support-*.tgz"
+    fi
+}
+
+test_pre_post() {
+    echo "Running test_pre_post"
+    pre_collect
+    echo "tmp_folder after pre_collect: $tmp_folder"
+
+    if [ ! -d "$origin_pwd/$tmp_folder" ]; then
+        echo "Folder $tmp_folder wasn't created."
+        return 1
+    else
+        echo "Folder $tmp_folder was successfully created."
+    fi
+
+    output=$(post_collect)
+    echo "Output of post_collect: $output"
+    assert_matches "Logs collected" "$output"
+    my_teardown
+}

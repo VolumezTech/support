@@ -1,6 +1,7 @@
 #!/bin/bash
 
-API_URL="https://api.volumez.com"
+VERSION="v2.1"
+COLLECTOR_LOG="cmd.log"
 
 # Define colors
 RED='\033[0;31m'
@@ -37,7 +38,8 @@ Examples:
     $0 --minimal              #Perform the shortest passible collection
     $0                        #Perform regualr collection
     $0 --full                 #Perform full collection
-    $0 --help, -h             #Show this help message.
+    $0 --help, -h             #Show this help message
+    $0 --version -v           #Show script version and exit
 
 EOF
    
@@ -75,6 +77,11 @@ arg_pars(){
     
     while [[ "$#" -gt 0 ]]; do
         case "$1" in
+            --version|-v)
+                echo "Version:"
+                echo "$(basename $0) $VERSION"
+                exit 0
+                ;;
             --minimal)
                 minimal=1
                 shift
@@ -117,12 +124,12 @@ arg_pars(){
 run(){
     log_file=$1
     shift
-    echo -n "running: $@ " | tee -a "$log_file" cmd.log
+    echo -n "running: $@ " | tee -a "$log_file" $COLLECTOR_LOG
     "$@" >> "$log_file" 2>&1
     if [ $? -eq 0 ]; then
-        echo "[Success]" | tee -a "$log_file" cmd.log
+        echo "[Success]" | tee -a "$log_file" $COLLECTOR_LOG
     else
-        echo "[Error]" | tee -a "$log_file" cmd.log
+        echo "[Error]" | tee -a "$log_file" $COLLECTOR_LOG
     fi
 }
 
@@ -185,20 +192,20 @@ get_entities() {
 }
 
 collect_minimal_pods(){
-    local container
-    for container in $CERT_MGM; do
-        run "$container.log" kubectl logs --namespace vlz-cert-manager "$container"
+    local pod
+    for pod in $CERT_MGM_PODS; do
+        run "$pod.log" kubectl logs --namespace vlz-cert-manager "$pod"
     done
     
-    for container in $CSI_DRIVER; do
-        run "$container.log" kubectl logs --namespace vlz-csi-driver "$container" vlz
+    for pod in $CSI_DRIVER_PODS; do
+        run "$pod.log" kubectl logs --namespace vlz-csi-driver "$pod" vlz
     done
 }
 
 collect_all_pods(){
     local pod
     local container containers
-    local i j
+    local i
     
     for i in "${!CERT_MGM_PODS_ARRAY[@]}"; do
         pod=${CERT_MGM_PODS_ARRAY[$i]}
@@ -210,8 +217,8 @@ collect_all_pods(){
 
     for i in "${!CSI_DRIVER_PODS_ARRAY[@]}"; do
         pod=${CSI_DRIVER_PODS_ARRAY[$i]}
-        containers=$(echo ${!CSI_DRIVER_CONTAINERS_ARRAY[i]} |xargs)
-        for j in $containers; do
+        containers=$(echo ${CSI_DRIVER_CONTAINERS_ARRAY[i]}| xargs)
+        for container in $containers; do
             run "$pod-$container.log" kubectl logs --namespace vlz-csi-driver "$pod" "$container"
         done
     done
@@ -242,6 +249,7 @@ collect_all_pv(){
 post_collect()
 {
     local d
+    echo "$0: $VERSION" >> $COLLECTOR_LOG   
     d=$(date "+%Y-%m-%d-%H-%M-%S")
     cd $origin_pwd
     tar -czf vlz-support-$d.tgz $tmp_folder
@@ -265,7 +273,7 @@ collect_all_pv
 }
 
 main(){
-    arg_pars $@
+    arg_pars "$@"
     pre_collect
     echo "Collecting Volumez logs"
     
@@ -281,4 +289,10 @@ main(){
     post_collect
 }
 
-main "$@"
+# For testing we do not run main when sourcing the script
+# In other words skip main $0 contains bash_unit (our unitest tool)
+if [[ "$0" == *"bash_unit"* ]] ; then
+    true
+else
+    main "$@"
+fi

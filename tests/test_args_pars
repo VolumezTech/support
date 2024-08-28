@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# Load the script to be tested
+. ../vlz-k8s-collector.sh
+
+setup() {
+    # Initialize any state before each test
+    minimal=0
+    regular=0
+    full=0
+    skip_api=0
+    debug=0
+}
+
+teardown() {
+    # Clean up after each test
+    unset minimal
+    unset regular
+    unset full
+    unset skip_api
+    unset debug
+}
+
+test_minimal_argument() {
+    arg_pars --minimal
+    assert_equals 1 "$minimal"
+    assert_equals 0 "$full"
+    assert_equals 0 "$skip_api"
+}
+
+test_full_argument() {
+    arg_pars --full
+    assert_equals 1 "$full"
+    assert_equals 0 "$minimal"
+    assert_equals 0 "$skip_api"
+}
+
+test_minimal_and_skip_api_arguments() {
+    arg_pars --minimal
+    assert_equals 1 "$minimal"
+    assert_equals 0 "$full"
+}
+
+test_full_and_skip_api_arguments() {
+    arg_pars --full
+    assert_equals 1 "$full"
+    assert_equals 0 "$minimal"
+}
+
+test_invalid_argument() {
+    assert_matches "ERROR:" $(arg_pars --invalid) 
+}
+
+test_minimal_and_full_arguments() {    
+    assert_matches "ERROR:" $(arg_pars --minimal --full)
+}
+
+test_no_arguments() {
+    arg_pars
+    assert_equals 0 "$minimal"
+    assert_equals 0 "$full"
+    assert_equals 1 "$regular"
+}
